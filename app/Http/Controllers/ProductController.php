@@ -8,13 +8,31 @@ use Illuminate\Http\Request;
 class ProductController extends Controller
 {
     /**
-     * Display all products
+     * Display products (with search + filter + pagination)
      */
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::latest()->get();
+        $query = Product::query();
 
-        return view('products.index', compact('products'));
+        // SEARCH
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                  ->orWhere('description', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        // CATEGORY FILTER
+        if ($request->category) {
+            $query->whereJsonContains('categories', $request->category);
+        }
+
+        // PAGINATION
+        $products = $query->latest()->paginate(5)->withQueryString();
+
+        $categories = ['Electronics', 'Fashion', 'Books', 'Furniture', 'Sports'];
+
+        return view('products.index', compact('products', 'categories'));
     }
 
     /**
@@ -23,7 +41,6 @@ class ProductController extends Controller
     public function create()
     {
         $categories = ['Electronics', 'Fashion', 'Books', 'Furniture', 'Sports'];
-
         return view('products.create', compact('categories'));
     }
 
@@ -33,20 +50,19 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name'        => 'required|string|max:255',
+            'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'categories'  => 'required|array',
+            'categories' => 'required|array',
         ]);
 
         Product::create([
-            'name'        => $request->name,
+            'name' => $request->name,
             'description' => $request->description,
-            'categories'  => $request->categories,
+            'categories' => $request->categories,
         ]);
 
-        return redirect()
-            ->route('products.index')
-            ->with('success', 'Product saved successfully');
+        return redirect()->route('products.index')
+            ->with('success', 'Product created successfully');
     }
 
     /**
@@ -59,7 +75,7 @@ class ProductController extends Controller
     }
 
     /**
-     * Show edit form
+     * Edit form
      */
     public function edit($id)
     {
@@ -77,32 +93,60 @@ class ProductController extends Controller
         $product = Product::findOrFail($id);
 
         $request->validate([
-            'name'        => 'required|string|max:255',
+            'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'categories'  => 'required|array',
+            'categories' => 'required|array',
         ]);
 
         $product->update([
-            'name'        => $request->name,
+            'name' => $request->name,
             'description' => $request->description,
-            'categories'  => $request->categories,
+            'categories' => $request->categories,
         ]);
 
-        return redirect()
-            ->route('products.index')
+        return redirect()->route('products.index')
             ->with('success', 'Product updated successfully');
     }
 
     /**
-     * Soft delete product
+     * Soft delete
      */
     public function destroy($id)
     {
-        $product = Product::findOrFail($id);
-        $product->delete();
+        Product::findOrFail($id)->delete();
 
-        return redirect()
-            ->route('products.index')
+        return redirect()->route('products.index')
             ->with('success', 'Product deleted successfully');
+    }
+
+    /**
+     * Trash page
+     */
+    public function trash()
+    {
+        $products = Product::onlyTrashed()->latest()->get();
+        return view('products.trash', compact('products'));
+    }
+
+    /**
+     * Restore product
+     */
+    public function restore($id)
+    {
+        Product::withTrashed()->findOrFail($id)->restore();
+
+        return redirect()->route('products.trash')
+            ->with('success', 'Product restored successfully');
+    }
+
+    /**
+     * Permanent delete
+     */
+    public function forceDelete($id)
+    {
+        Product::withTrashed()->findOrFail($id)->forceDelete();
+
+        return redirect()->route('products.trash')
+            ->with('success', 'Product permanently deleted');
     }
 }
