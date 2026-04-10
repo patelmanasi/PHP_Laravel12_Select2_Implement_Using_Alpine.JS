@@ -30,3 +30,12 @@ Route::put('/products/{id}', [ProductController::class, 'update'])->name('produc
 
 // Delete product
 Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
+
+// Trash
+Route::get('/products-trash', [ProductController::class, 'trash'])->name('products.trash');
+
+// Restore
+Route::get('/products-restore/{id}', [ProductController::class, 'restore'])->name('products.restore');
+
+// Force Delete
+Route::delete('/products-force-delete/{id}', [ProductController::class, 'forceDelete'])->name('products.forceDelete');
