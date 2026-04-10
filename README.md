@@ -732,5 +732,8 @@ PHP_Laravel12_Select2_Implement_Using_Alpine.JS/
 ---
 
 Your **PHP_Laravel12_Select2_Implement_Using_Alpine.JS** project is now ready!
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> development
